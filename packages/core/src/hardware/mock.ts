@@ -10,7 +10,10 @@ export class MockPieeg {
   private timer: ReturnType<typeof setInterval> | null = null;
   private sampleIndex = 0;
 
-  start(onFrame: (frame: EegFrame) => void): void {
+  start(
+    onFrame: (frame: EegFrame) => void,
+    onSample?: (raw: number[]) => void,
+  ): void {
     this.stop();
     const batch = Math.round(SAMPLE_RATE / UPDATE_HZ);
     this.timer = setInterval(() => {
@@ -18,6 +21,7 @@ export class MockPieeg {
       for (let i = 0; i < batch; i += 1) {
         raw = synthesizeSample(this.sampleIndex);
         this.sampleIndex += 1;
+        onSample?.(raw);
       }
       const t = this.sampleIndex / SAMPLE_RATE;
       const bands = {
@@ -54,6 +58,10 @@ function synthesizeSample(index: number): number[] {
   const t = index / SAMPLE_RATE;
   const raw = new Array<number>(CHANNELS);
   for (let ch = 0; ch < CHANNELS; ch += 1) {
+    if (ch === 6) {
+      raw[ch] = (Math.random() - 0.5) * 0.2;
+      continue;
+    }
     const phase = ch * 0.35;
     raw[ch] =
       18 * Math.sin(2 * Math.PI * 10 * t + phase) +

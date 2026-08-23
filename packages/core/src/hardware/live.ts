@@ -26,6 +26,7 @@ export class PieegHost {
     onFrame: (frame: EegFrame) => void,
     onDisconnect: () => void,
     onError: (message: string) => void,
+    onSample?: (raw: number[]) => void,
   ): Promise<void> {
     this.disconnect();
     this.closed = false;
@@ -51,6 +52,7 @@ export class PieegHost {
 
     client.onData((channels) => {
       this.latestRaw = channels.slice();
+      onSample?.(this.latestRaw);
     });
 
     client.onBandPowers((bands) => {

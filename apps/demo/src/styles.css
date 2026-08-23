@@ -10,6 +10,23 @@ body { font-family: system-ui, sans-serif; background: #111; color: #eee; }
 .bioide-hw-live { color: #6c6; }
 .bioide-hw-mock { color: #cc8; }
 .bioide-hw-error { margin: 0; padding: 0 12px 8px; color: #f88; font-size: 12px; }
+.bioide-health { padding: 8px 12px 10px; border-bottom: 1px solid #2a2a2a; font-size: 12px; color: #bbb; }
+.bioide-health-idle { display: flex; gap: 12px; color: #777; }
+.bioide-health-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bioide-pill { padding: 1px 7px; border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.bioide-pill-ok { background: #163; color: #9d8; }
+.bioide-pill-warn { background: #431; color: #ec8; }
+.bioide-health-stale .bioide-pill, .bioide-health-slow .bioide-pill { background: #431; color: #ec8; }
+.bioide-electrodes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bioide-electrode { display: grid; min-width: 64px; padding: 4px 6px; border-radius: 4px; background: #1a1a1a; border-left: 3px solid #3fb950; }
+.bioide-electrode b { font-size: 11px; }
+.bioide-electrode em { font-style: normal; font-size: 10px; text-transform: uppercase; color: #9aa; }
+.bioide-electrode small { color: #888; }
+.bioide-electrode-ok { border-left-color: #3fb950; }
+.bioide-electrode-noisy { border-left-color: #d29922; }
+.bioide-electrode-flat { border-left-color: #8b949e; }
+.bioide-electrode-clipped { border-left-color: #f85149; }
+.bioide-health-hint { margin: 6px 0 0; color: #777; font-size: 11px; }
 .bioide-panes { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
 .bioide-editor, .bioide-terminal { min-height: 0; height: 100%; }
 .bioide-terminal { margin: 0; padding: 12px; overflow: auto; background: #0b0b0b; border-left: 1px solid #333; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }

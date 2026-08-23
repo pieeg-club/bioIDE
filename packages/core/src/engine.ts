@@ -2,6 +2,7 @@ import { WorkerBroker } from "./hardware/broker.ts";
 import { toStudentEeg } from "./hardware/context.ts";
 import { PieegHost } from "./hardware/live.ts";
 import { MockPieeg } from "./hardware/mock.ts";
+import { idleHealth, SignalMonitor } from "./hardware/monitor.ts";
 import { RuntimeHost } from "./runtime/host.ts";
 import type {
   EegFrame,
@@ -10,6 +11,7 @@ import type {
   FileBuffer,
   HardwareSource,
   Language,
+  SignalHealth,
   StudentEeg,
 } from "./types.ts";
 
@@ -52,11 +54,13 @@ export interface IdeSnapshot {
   deviceId: string;
   hardwareError: string | null;
   eeg: StudentEeg | null;
+  health: SignalHealth;
 }
 
 export class IdeEngine {
   private readonly runtime = new RuntimeHost();
   private readonly mock = new MockPieeg();
+  private readonly monitor = new SignalMonitor();
   private readonly live = new PieegHost();
   private readonly broker = new WorkerBroker((frame) => {
     void this.runtime.pushEeg(frame);
@@ -129,7 +133,10 @@ export class IdeEngine {
     this.stopHardware();
     this.hardware = "mock";
     this.hardwareError = null;
-    this.mock.start((frame) => this.ingest(frame));
+    this.mock.start(
+      (frame) => this.ingest(frame),
+      (raw) => this.monitor.pushSample(raw),
+    );
     this.emit();
   }
 
@@ -149,6 +156,7 @@ export class IdeEngine {
           this.hardwareError = message;
           this.emit();
         },
+        (raw) => this.monitor.pushSample(raw),
       );
       this.hardware = "live";
       this.emit();
@@ -213,6 +221,7 @@ export class IdeEngine {
   }
 
   private ingest(frame: EegFrame): void {
+    this.monitor.pushFrame(frame);
     this.broker.push(frame);
     this.emit();
   }
@@ -220,6 +229,7 @@ export class IdeEngine {
   private stopHardware(): void {
     this.mock.stop();
     this.live.disconnect();
+    this.monitor.reset();
     this.hardware = "idle";
   }
 
@@ -234,6 +244,7 @@ export class IdeEngine {
       deviceId: this.deviceId,
       hardwareError: this.hardwareError,
       eeg: toStudentEeg(this.broker.getLatest()),
+      health: this.hardware === "idle" ? idleHealth() : this.monitor.snapshot(),
     };
   }
 

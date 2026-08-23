@@ -6,6 +6,7 @@ import {
   type Language,
 } from "@bioide/core";
 import { CodeEditor } from "./CodeEditor.tsx";
+import { SignalHealthPanel } from "./SignalHealth.tsx";
 import { Terminal } from "./Terminal.tsx";
 import { useIdeEngine } from "./useIdeEngine.ts";
 
@@ -109,6 +110,7 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
       {state.hardwareError ? (
         <p className="bioide-hw-error">{state.hardwareError}</p>
       ) : null}
+      <SignalHealthPanel health={state.health} />
       <div className="bioide-panes">
         <CodeEditor
           value={state.content}

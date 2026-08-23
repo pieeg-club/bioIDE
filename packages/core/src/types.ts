@@ -1,5 +1,29 @@
 export type Language = "javascript" | "python";
 export type HardwareSource = "mock" | "live" | "idle";
+export type ContactQuality = "ok" | "flat" | "noisy" | "clipped";
+export type StreamStatus = "idle" | "ok" | "slow" | "stale";
+
+export interface ElectrodeHealth {
+  index: number;
+  rms: number;
+  pp: number;
+  std: number;
+  contact: ContactQuality;
+}
+
+export interface SignalHealth {
+  source: HardwareSource;
+  device: string;
+  channels: number;
+  sampleRate: number;
+  packetHz: number;
+  ageMs: number;
+  jitterMs: number;
+  samples: number;
+  status: StreamStatus;
+  healthy: boolean;
+  electrodes: ElectrodeHealth[];
+}
 
 export interface FileBuffer {
   id: string;
