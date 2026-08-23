@@ -46,11 +46,14 @@ export interface IdeSnapshot {
   health: SignalHealth;
 }
 
+const HISTORY_CAP = 4096;
+
 export class IdeEngine {
   private readonly runtime = new RuntimeHost();
   private readonly mock = new MockPieeg();
   private readonly monitor = new SignalMonitor();
   private readonly live = new PieegHost();
+  private readonly frames: EegFrame[] = [];
   private readonly broker = new WorkerBroker((frame) => {
     void this.runtime.pushEeg(frame);
   });
@@ -117,6 +120,7 @@ export class IdeEngine {
     this.stopHardware();
     this.hardware = "mock";
     this.hardwareError = null;
+    this.broker.start();
     this.mock.start(
       (frame) => this.ingest(frame),
       (raw) => this.monitor.pushSample(raw),
@@ -142,6 +146,7 @@ export class IdeEngine {
         },
         (raw) => this.monitor.pushSample(raw),
       );
+      this.broker.start();
       this.hardware = "live";
       this.emit();
     } catch (err) {
@@ -175,6 +180,7 @@ export class IdeEngine {
         this.buffer.content,
         this.broker.getLatest(),
         this.checks,
+        this.frames,
       );
       this.lastResult = result;
       return result;
@@ -201,6 +207,10 @@ export class IdeEngine {
   private ingest(frame: EegFrame): void {
     this.monitor.pushFrame(frame);
     this.broker.push(frame);
+    this.frames.push(frame);
+    if (this.frames.length > HISTORY_CAP) {
+      this.frames.splice(0, this.frames.length - HISTORY_CAP);
+    }
     this.emit();
   }
 
@@ -208,6 +218,7 @@ export class IdeEngine {
     this.mock.stop();
     this.live.disconnect();
     this.monitor.reset();
+    this.frames.length = 0;
     this.hardware = "idle";
   }
 

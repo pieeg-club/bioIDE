@@ -19,8 +19,9 @@ export class RuntimeHost {
     code: string,
     eeg?: EegFrame | null,
     checks?: string | null,
+    history?: EegFrame[] | null,
   ): Promise<ExecutionResult> {
-    return this.ensureApi().executeCode(code, eeg, checks);
+    return this.ensureApi().executeCode(code, eeg, checks, history);
   }
 
   pushEeg(frame: EegFrame): Promise<void> {

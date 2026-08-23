@@ -217,4 +217,74 @@ console.log("model ok —", model.layers.length, "layers");
 model.dispose();
 `,
   },
+  {
+    id: "window-features",
+    label: "Window features",
+    content: `// Recipe: Window features
+// bio reads a TIME WINDOW of frames, not just the latest one.
+// Start Mock (or Connect), wait a second or two, then Run.
+
+const win = bio.window(3); // last 3 seconds of frames
+if (!win.count) throw new Error("no history yet — stream for a moment, then Run");
+
+console.log(win.count + " frames over " + win.seconds + "s @" + win.sampleRate + " Hz");
+
+// Trend of alpha across the window.
+const alpha = bio.signal("alpha", 3);
+console.log("alpha mean", bio.mean(alpha).toFixed(3), "std", bio.std(alpha).toFixed(3));
+
+// Fixed feature vector = mean band powers + derived states.
+const f = bio.features(win.frames);
+console.log("features", bio.featureNames.join(", "));
+
+plot({ title: "alpha over time", kind: "line", values: alpha });
+plot({ title: "feature vector", kind: "bar", labels: bio.featureNames, values: f });
+`,
+  },
+  {
+    id: "calibrate-classifier",
+    label: "Calibrate a classifier",
+    content: `// Recipe: Calibrate a classifier
+// A contrastive protocol: record REST, then record FOCUS, then
+// cross-validate a small model. Frames keep streaming during bio.record().
+// Start Mock (or Connect) first, then Run. Run again to collect more epochs.
+
+console.log("recording REST — relax for 5s...");
+for (let i = 0; i < 5; i++) await bio.record("rest", 1000);
+
+console.log("recording FOCUS — concentrate for 5s...");
+for (let i = 0; i < 5; i++) await bio.record("focus", 1000);
+
+const data = bio.dataset();
+console.log("dataset:", data.X.length, "epochs", data.labels.join(" / "));
+
+if (data.labels.length < 2) {
+  throw new Error("need both classes — Run again to record the other state");
+}
+
+// Which feature separates the two states best (Cohen's d, within-session).
+const restRows = data.X.filter((_, i) => data.y[i] === "rest");
+const focusRows = data.X.filter((_, i) => data.y[i] === "focus");
+const dPerFeature = bio.featureNames.map((_, k) =>
+  bio.cohensD(restRows.map((r) => r[k]), focusRows.map((r) => r[k])),
+);
+plot({ title: "Cohen's d (rest→focus)", kind: "bar", labels: bio.featureNames, values: dPerFeature });
+
+// Honest score: stratified k-fold cross-validation, balanced accuracy.
+const cv = bio.crossValScore(data.X, data.y, 5);
+console.log("CV balanced accuracy", (cv.balancedAccuracy * 100).toFixed(1) + "% over", cv.folds, "folds");
+
+// Fit on everything and preview a live prediction.
+const model = bio.logreg(data.X, data.y);
+const live = bio.features(bio.window(1).frames);
+console.log("live prediction:", model.predict(live));
+
+plot({
+  title: "CV balanced accuracy",
+  kind: "bar",
+  labels: ["balanced acc"],
+  values: [cv.balancedAccuracy],
+});
+`,
+  },
 ];

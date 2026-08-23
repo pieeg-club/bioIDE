@@ -5,10 +5,13 @@ export { EEG_DEVICES } from "./hardware/live.ts";
 export type {
   CheckResult,
   ContactQuality,
+  Dataset,
   EegBands,
   EegFrame,
+  EegWindow,
   ElectrodeHealth,
   EngineListener,
+  Epoch,
   ExecutionResult,
   FileBuffer,
   HardwareSource,

@@ -3,9 +3,13 @@
 import * as Comlink from "comlink";
 import * as tf from "@tensorflow/tfjs";
 import { toStudentEeg } from "../hardware/context.ts";
+import * as bioLib from "./bio.ts";
 import type {
   CheckResult,
+  Dataset,
   EegFrame,
+  EegWindow,
+  Epoch,
   ExecutionResult,
   PlotKind,
   PlotSeries,
@@ -17,7 +21,166 @@ import type {
 await tf.setBackend("cpu");
 await tf.ready();
 
+// Rolling frame history so user code can read a time window instead of a single
+// instantaneous frame. Capacity is bounded to keep worker memory flat.
+const HISTORY_CAP = 4096;
+const history: StudentEeg[] = [];
+const recordings: Epoch[] = [];
+
 let latestEeg: StudentEeg | null = null;
+
+const FEATURE_NAMES = [
+  "delta",
+  "theta",
+  "alpha",
+  "beta",
+  "gamma",
+  "focus",
+  "relaxation",
+] as const;
+
+type SignalName =
+  | "delta"
+  | "theta"
+  | "alpha"
+  | "beta"
+  | "gamma"
+  | "focus"
+  | "relaxation"
+  | "meditation";
+
+function pushHistory(frame: StudentEeg): void {
+  history.push(frame);
+  if (history.length > HISTORY_CAP) history.splice(0, history.length - HISTORY_CAP);
+}
+
+function windowFrames(seconds: number): StudentEeg[] {
+  if (!history.length) return [];
+  const now = history[history.length - 1].ts;
+  const cutoff = now - seconds * 1000;
+  const out: StudentEeg[] = [];
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i].ts < cutoff) break;
+    out.push(history[i]);
+  }
+  return out.reverse();
+}
+
+function readWindow(seconds = 2): EegWindow {
+  const frames = windowFrames(seconds);
+  const last = frames[frames.length - 1] ?? latestEeg;
+  return {
+    seconds,
+    count: frames.length,
+    sampleRate: last?.sampleRate ?? 0,
+    channels: last?.channels ?? 0,
+    frames,
+  };
+}
+
+function scalarOf(frame: StudentEeg, name: SignalName): number {
+  switch (name) {
+    case "delta":
+      return frame.delta;
+    case "theta":
+      return frame.theta;
+    case "alpha":
+      return frame.alpha;
+    case "beta":
+      return frame.beta;
+    case "gamma":
+      return frame.gamma;
+    case "focus":
+      return frame.focus;
+    case "relaxation":
+      return frame.relaxation;
+    case "meditation":
+      return frame.meditation;
+    default:
+      return 0;
+  }
+}
+
+// Time series of one feature over the window. A number selects a raw channel;
+// a name selects a band power or derived state.
+function readSignal(name: SignalName | number, seconds = 2): number[] {
+  const frames = windowFrames(seconds);
+  if (typeof name === "number") {
+    return frames.map((f) => f.raw[name] ?? 0);
+  }
+  return frames.map((f) => scalarOf(f, name));
+}
+
+// Fixed feature vector: mean band powers + mean derived states over the frames.
+function featuresOf(frames: StudentEeg[]): number[] {
+  if (!frames.length) return FEATURE_NAMES.map(() => 0);
+  return [
+    bioLib.mean(frames.map((f) => f.delta)),
+    bioLib.mean(frames.map((f) => f.theta)),
+    bioLib.mean(frames.map((f) => f.alpha)),
+    bioLib.mean(frames.map((f) => f.beta)),
+    bioLib.mean(frames.map((f) => f.gamma)),
+    bioLib.mean(frames.map((f) => f.focus)),
+    bioLib.mean(frames.map((f) => f.relaxation)),
+  ];
+}
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+
+// Awaits `ms` of live streaming, then snapshots the window into a labelled epoch
+// and appends it to the session dataset. Frames keep arriving during the await.
+async function record(label: string, ms = 1000): Promise<Epoch> {
+  await sleep(ms);
+  const frames = windowFrames(ms / 1000);
+  const epoch: Epoch = {
+    label,
+    ts: Date.now(),
+    durationMs: ms,
+    features: featuresOf(frames),
+    frames: frames.length,
+  };
+  recordings.push(epoch);
+  return epoch;
+}
+
+function dataset(): Dataset {
+  return {
+    X: recordings.map((e) => e.features),
+    y: recordings.map((e) => e.label),
+    labels: [...new Set(recordings.map((e) => e.label))].sort(),
+  };
+}
+
+function clearDataset(): void {
+  recordings.length = 0;
+}
+
+const bio = {
+  featureNames: [...FEATURE_NAMES],
+  window: readWindow,
+  signal: readSignal,
+  features: featuresOf,
+  sleep,
+  record,
+  dataset,
+  clearDataset,
+  epochs: () => [...recordings],
+  mean: bioLib.mean,
+  std: bioLib.std,
+  rms: bioLib.rms,
+  zscore: bioLib.zscore,
+  cohensD: bioLib.cohensD,
+  fft: bioLib.fft,
+  bandpower: bioLib.bandpower,
+  kfold: bioLib.kfold,
+  trainTestSplit: bioLib.trainTestSplit,
+  logreg: bioLib.logreg,
+  crossValScore: bioLib.crossValScore,
+  accuracy: bioLib.accuracy,
+  balancedAccuracy: bioLib.balancedAccuracy,
+  confusion: bioLib.confusion,
+};
 
 function formatArgs(args: unknown[]): string {
   return args
@@ -147,11 +310,12 @@ async function executeJavaScript(
       "Context",
       "EEG",
       "tf",
+      "bio",
       "check",
       "plot",
       `"use strict";\nreturn (async () => {\n${body}\n})();`,
     );
-    await fn(sandboxConsole, context, latestEeg, tf, check, plot);
+    await fn(sandboxConsole, context, latestEeg, tf, bio, check, plot);
     return { stdout: lines.join("\n"), checks: checkResults, plots };
   } catch (err) {
     return {
@@ -163,17 +327,30 @@ async function executeJavaScript(
   }
 }
 
+function seedLatest(frame: EegFrame | null | undefined, intoHistory: boolean): void {
+  if (!frame) return;
+  const student = toStudentEeg(frame);
+  latestEeg = student;
+  if (intoHistory && student) pushHistory(student);
+}
+
 const api: RuntimeApi = {
   async pushEeg(frame: EegFrame): Promise<void> {
-    latestEeg = toStudentEeg(frame);
+    seedLatest(frame, true);
   },
 
   async executeCode(
     code: string,
     eeg?: EegFrame | null,
     checks?: string | null,
+    frames?: EegFrame[] | null,
   ): Promise<ExecutionResult> {
-    if (eeg) latestEeg = toStudentEeg(eeg);
+    if (frames?.length) {
+      history.length = 0;
+      for (const frame of frames) seedLatest(frame, true);
+    } else {
+      seedLatest(eeg, history.length === 0);
+    }
     const started = performance.now();
     const result = await executeJavaScript(code, checks);
     return {

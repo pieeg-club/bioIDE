@@ -69,6 +69,28 @@ export interface StudentEeg {
   ts: number;
 }
 
+export interface EegWindow {
+  seconds: number;
+  count: number;
+  sampleRate: number;
+  channels: number;
+  frames: StudentEeg[];
+}
+
+export interface Epoch {
+  label: string;
+  ts: number;
+  durationMs: number;
+  features: number[];
+  frames: number;
+}
+
+export interface Dataset {
+  X: number[][];
+  y: string[];
+  labels: string[];
+}
+
 export interface CheckResult {
   ok: boolean;
   message: string;
@@ -102,6 +124,7 @@ export interface RuntimeApi {
     code: string,
     eeg?: EegFrame | null,
     checks?: string | null,
+    history?: EegFrame[] | null,
   ): Promise<ExecutionResult>;
   pushEeg(frame: EegFrame): Promise<void>;
 }
