@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
 
 import * as Comlink from "comlink";
-import type { ExecutionResult, Language, RuntimeApi } from "../types.ts";
+import { toStudentEeg } from "../hardware/context.ts";
+import type { EegFrame, ExecutionResult, Language, RuntimeApi, StudentEeg } from "../types.ts";
 
 const PYODIDE_VERSION = "0.27.7";
 const PYODIDE_INDEX = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -10,7 +11,11 @@ type PyodideLike = {
   setStdout: (opts: { batched: (text: string) => void }) => void;
   setStderr: (opts: { batched: (text: string) => void }) => void;
   runPythonAsync: (code: string) => Promise<unknown>;
+  globals: { set: (name: string, value: unknown) => void };
+  toPy: (value: unknown) => unknown;
 };
+
+let latestEeg: StudentEeg | null = null;
 
 let pyodidePromise: Promise<PyodideLike> | null = null;
 
@@ -54,11 +59,13 @@ function executeJavaScript(code: string): { stdout: string } {
     error: capture,
   };
 
+  const context = { EEG: latestEeg };
   const fn = new Function(
     "console",
+    "Context",
     `"use strict";\n${code}\n`,
   );
-  fn(sandboxConsole);
+  fn(sandboxConsole, context);
   return { stdout: lines.join("\n") };
 }
 
@@ -69,6 +76,7 @@ async function executePython(code: string): Promise<{ stdout: string }> {
     if (text.length > 0) lines.push(text);
   };
 
+  pyodide.globals.set("Context", pyodide.toPy({ EEG: latestEeg }));
   pyodide.setStdout({ batched: collect });
   pyodide.setStderr({ batched: collect });
   await pyodide.runPythonAsync(code);
@@ -76,7 +84,16 @@ async function executePython(code: string): Promise<{ stdout: string }> {
 }
 
 const api: RuntimeApi = {
-  async executeCode(code: string, lang: Language): Promise<ExecutionResult> {
+  async pushEeg(frame: EegFrame): Promise<void> {
+    latestEeg = toStudentEeg(frame);
+  },
+
+  async executeCode(
+    code: string,
+    lang: Language,
+    eeg?: EegFrame | null,
+  ): Promise<ExecutionResult> {
+    if (eeg) latestEeg = toStudentEeg(eeg);
     const started = performance.now();
     try {
       const { stdout } =

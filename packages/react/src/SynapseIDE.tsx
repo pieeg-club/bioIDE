@@ -1,5 +1,10 @@
 import { useEffect, useMemo } from "react";
-import { IdeEngine, type IdeEngineOptions, type Language } from "@bioide/core";
+import {
+  EEG_DEVICES,
+  IdeEngine,
+  type IdeEngineOptions,
+  type Language,
+} from "@bioide/core";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { Terminal } from "./Terminal.tsx";
 import { useIdeEngine } from "./useIdeEngine.ts";
@@ -25,6 +30,13 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
     engine.setLanguage(language);
   };
 
+  const sourceLabel =
+    state.hardware === "live"
+      ? "live"
+      : state.hardware === "mock"
+        ? "mock"
+        : "idle";
+
   return (
     <div className="bioide-root">
       <header className="bioide-toolbar">
@@ -38,6 +50,52 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
             <option value="python">Python</option>
           </select>
         </label>
+        <label>
+          Board
+          <select
+            value={state.deviceId}
+            disabled={state.hardware === "live"}
+            onChange={(event) => engine.setDeviceId(event.target.value)}
+          >
+            {EEG_DEVICES.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={state.hardware === "mock"}
+          onClick={() => engine.startMock()}
+        >
+          Mock
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (state.hardware === "live") {
+              engine.disconnectHardware();
+              return;
+            }
+            void engine.connectHardware();
+          }}
+        >
+          {state.hardware === "live" ? "Disconnect" : "Connect"}
+        </button>
+        <button
+          type="button"
+          disabled={state.hardware === "idle"}
+          onClick={() => engine.disconnectHardware()}
+        >
+          Stop
+        </button>
+        <span className={`bioide-hw bioide-hw-${sourceLabel}`}>
+          {sourceLabel}
+          {state.eeg
+            ? ` α ${state.eeg.alpha.toFixed(2)} rel ${(state.eeg.relaxation * 100).toFixed(0)}%`
+            : ""}
+        </span>
         <button
           type="button"
           disabled={state.running}
@@ -48,6 +106,9 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
           {state.running ? "Running..." : "Run"}
         </button>
       </header>
+      {state.hardwareError ? (
+        <p className="bioide-hw-error">{state.hardwareError}</p>
+      ) : null}
       <div className="bioide-panes">
         <CodeEditor
           value={state.content}
