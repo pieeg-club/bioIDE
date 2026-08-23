@@ -245,6 +245,36 @@ body {
 }
 .bioide-editor .cm-editor { height: 100%; }
 .bioide-terminal-pane { background: #1c1f24; }
+.bioide-output {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bioide-plots {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 0;
+  max-height: 46%;
+  overflow: auto;
+}
+.bioide-plot {
+  margin: 0;
+  padding: 6px 8px 8px;
+  background: #14171b;
+  border: 1px solid #2c313a;
+  border-radius: 5px;
+}
+.bioide-plot figcaption {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: #c5ccd4;
+}
+.bioide-plot-canvas {
+  display: block;
+  width: 100%;
+  height: 112px;
+}
 .bioide-terminal {
   flex: 1;
   min-height: 0;

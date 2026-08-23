@@ -10,18 +10,23 @@ export const RECIPES: Recipe[] = [
     label: "Hello EEG",
     content: `// Recipe: Hello EEG
 // Click Mock (or Connect) first, then Run.
-// EEG is the latest frame from the broker. No hardware? Mock is identical.
+// EEG is the latest frame from the broker. plot() draws in Output.
 
 const eeg = EEG;
 if (!eeg) {
   console.log("no EEG yet — start Mock or Connect, then Run again");
 } else {
-  // bands are already DSP-cleaned on the main thread
   console.log(eeg.source, eeg.device, eeg.channels + " ch @" + eeg.sampleRate + " Hz");
-  console.log("delta", eeg.delta.toFixed(3), "theta", eeg.theta.toFixed(3));
-  console.log("alpha", eeg.alpha.toFixed(3), "beta", eeg.beta.toFixed(3), "gamma", eeg.gamma.toFixed(3));
   console.log("relaxation", (eeg.relaxation * 100).toFixed(0) + "%");
   console.log("focus", (eeg.focus * 100).toFixed(0) + "%");
+
+  plot({
+    title: "band powers",
+    kind: "bar",
+    labels: ["delta", "theta", "alpha", "beta", "gamma"],
+    values: [eeg.delta, eeg.theta, eeg.alpha, eeg.beta, eeg.gamma],
+  });
+  plot({ title: "raw window", kind: "line", values: eeg.raw });
 }
 `,
   },
@@ -29,21 +34,24 @@ if (!eeg) {
     id: "band-tensor",
     label: "Band tensor",
     content: `// Recipe: Band tensor
-// tf is TensorFlow.js, already injected in the worker (CPU backend).
+// tf is injected in the worker. plot() accepts tensors too.
 // Click Mock, then Run.
 
 const eeg = EEG;
 if (!eeg) throw new Error("start Mock or Connect first");
 
-// one vector: [delta, theta, alpha, beta, gamma]
 const x = tf.tensor1d([eeg.delta, eeg.theta, eeg.alpha, eeg.beta, eeg.gamma]);
 
-console.log("shape", x.shape);           // [5]
-console.log("bands", x.arraySync());
+console.log("shape", x.shape);
 console.log("mean", Number(x.mean().arraySync()).toFixed(4));
-console.log("max band", Number(x.max().arraySync()).toFixed(4));
 
-// always dispose tensors you create — the worker is long-lived
+plot({
+  title: "tf.tensor1d bands",
+  kind: "bar",
+  labels: ["δ", "θ", "α", "β", "γ"],
+  values: x,
+});
+
 x.dispose();
 `,
   },
@@ -51,8 +59,7 @@ x.dispose();
     id: "tiny-predict",
     label: "Tiny predict",
     content: `// Recipe: Tiny predict
-// Build a 5 → 8 → 1 network and score the current EEG frame.
-// Weights are random until you train (see "Train a blink").
+// Untrained 5 → 8 → 1 net. Plot the input next to the random score.
 
 const eeg = EEG;
 if (!eeg) throw new Error("start Mock or Connect first");
@@ -62,13 +69,27 @@ model.add(tf.layers.dense({ units: 8, activation: "relu", inputShape: [5] }));
 model.add(tf.layers.dense({ units: 1, activation: "sigmoid" }));
 model.compile({ optimizer: "adam", loss: "binaryCrossentropy" });
 
-const x = tf.tensor2d([[eeg.delta, eeg.theta, eeg.alpha, eeg.beta, eeg.gamma]]);
+const bands = [eeg.delta, eeg.theta, eeg.alpha, eeg.beta, eeg.gamma];
+const x = tf.tensor2d([bands]);
 const out = model.predict(x);
 const y = Array.isArray(out) ? out[0] : out;
+const score = y.dataSync()[0];
 
 console.log("layers", model.layers.length);
-console.log("input", x.arraySync());
-console.log("pred (untrained)", y.arraySync());
+console.log("pred (untrained)", score.toFixed(3));
+
+plot({
+  title: "input bands",
+  kind: "bar",
+  labels: ["δ", "θ", "α", "β", "γ"],
+  values: bands,
+});
+plot({
+  title: "untrained score",
+  kind: "bar",
+  labels: ["focus-ish"],
+  values: [score],
+});
 
 x.dispose();
 y.dispose();
@@ -79,15 +100,13 @@ model.dispose();
     id: "train-blink",
     label: "Train a blink",
     content: `// Recipe: Train a blink
-// Fit a tiny classifier on synthetic samples around this EEG frame.
-// Keep epochs small — this runs in the worker, not the UI thread.
+// Fit a tiny classifier, then plot the loss curve.
+// Keep epochs small — this runs in the worker.
 
 const eeg = EEG;
 if (!eeg) throw new Error("start Mock or Connect first");
 
 const bands = [eeg.delta, eeg.theta, eeg.alpha, eeg.beta, eeg.gamma];
-
-// 16 fake windows: even rows ≈ "relaxed", odd rows ≈ "focused"
 const rows = [];
 const labels = [];
 for (let i = 0; i < 16; i++) {
@@ -112,14 +131,25 @@ model.add(tf.layers.dense({ units: 1, activation: "sigmoid" }));
 model.compile({ optimizer: "adam", loss: "binaryCrossentropy" });
 
 const hist = await model.fit(xs, ys, { epochs: 8, batchSize: 8, verbose: 0 });
-const last = hist.history.loss.at(-1);
-console.log("loss", Array.isArray(last) ? last[0] : last);
+const loss = hist.history.loss.map((value) =>
+  Array.isArray(value) ? value[0] : value,
+);
 
 const live = tf.tensor2d([bands]);
 const out = model.predict(live);
 const pred = Array.isArray(out) ? out[0] : out;
 const score = pred.dataSync()[0];
+
+console.log("final loss", loss.at(-1));
 console.log("live focus-ish", (score * 100).toFixed(1) + "%");
+
+plot({ title: "training loss", kind: "line", values: loss });
+plot({
+  title: "live score",
+  kind: "bar",
+  labels: ["focus-ish"],
+  values: [score],
+});
 
 xs.dispose();
 ys.dispose();
@@ -132,8 +162,7 @@ model.dispose();
     id: "focus-gate",
     label: "Focus gate",
     content: `// Recipe: Focus gate
-// DSP already computed focus / relaxation on the main thread.
-// This is the "if brain state then …" pattern — no model required.
+// DSP already computed focus / relaxation. Plot the two scores.
 
 const eeg = EEG;
 if (!eeg) throw new Error("start Mock or Connect first");
@@ -152,7 +181,13 @@ if (eeg.focus >= FOCUS) {
   console.log("gate: mixed — blink, unclench jaw, check electrodes");
 }
 
-// optional assertion helpers (also used by hidden host checks)
+plot({
+  title: "state",
+  kind: "bar",
+  labels: ["focus", "relax", "gate"],
+  values: [eeg.focus, eeg.relaxation, FOCUS],
+});
+
 check(eeg.focus >= 0 && eeg.focus <= 1, "focus should be 0..1");
 check(eeg.relaxation >= 0 && eeg.relaxation <= 1, "relaxation should be 0..1");
 `,
@@ -161,8 +196,7 @@ check(eeg.relaxation >= 0 && eeg.relaxation <= 1, "relaxation should be 0..1");
     id: "hidden-check",
     label: "Assert a model",
     content: `// Recipe: Assert a model
-// check(condition, message) is injected. Hosts can also append hidden
-// checks after your buffer via IdeEngine({ checks }) — they never appear here.
+// check() still works. plot() can chart layer sizes.
 
 const model = tf.sequential();
 model.add(tf.layers.dense({ units: 8, activation: "relu", inputShape: [5] }));
@@ -172,7 +206,14 @@ check(typeof tf !== "undefined", "tf is injected in the worker");
 check(model.layers.length >= 2, "need at least 2 layers");
 check(model.inputs[0].shape[1] === 5, "first layer should take 5 band powers");
 
-console.log("model ok —", model.layers.length, "layers, input", model.inputs[0].shape);
+plot({
+  title: "units per layer",
+  kind: "bar",
+  labels: model.layers.map((layer, i) => (i + 1) + " " + layer.name),
+  values: model.layers.map((layer) => layer.units ?? 0),
+});
+
+console.log("model ok —", model.layers.length, "layers");
 model.dispose();
 `,
   },

@@ -72,6 +72,7 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
                 </option>
               ))}
             </select>
+          </label>
           <label className="bioide-field">
             Recipes
             <select
@@ -92,7 +93,6 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
                 </option>
               ))}
             </select>
-          </label>
           </label>
         </div>
         <div className="bioide-cluster">

@@ -10,7 +10,7 @@ Zero-backend JavaScript browser IDE for EEG.
 
 ## Runtime
 
-Student JS runs in a Web Worker. The sandbox injects `tf` (`@tensorflow/tfjs`, CPU backend), `EEG` / `Context.EEG`, `console`, and `check(condition, message)`.
+Student JS runs in a Web Worker. The sandbox injects `tf` (`@tensorflow/tfjs`, CPU backend), `EEG` / `Context.EEG`, `console`, `check(condition, message)`, and `plot(title, values)` / `plot({ title, kind, labels, values|series })`. Plots render above stdout in Output.
 
 The toolbar **Recipes** menu loads commented examples into the editor (EEG stream, tensors, predict, train, focus gate, assertions). Click Mock, pick a recipe, Run.
 

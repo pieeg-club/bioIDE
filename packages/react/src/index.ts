@@ -4,6 +4,7 @@ export { CodeEditor } from "./CodeEditor.tsx";
 export type { CodeEditorProps } from "./CodeEditor.tsx";
 export { Terminal } from "./Terminal.tsx";
 export type { TerminalProps } from "./Terminal.tsx";
+export { Plot } from "./Plot.tsx";
 export { SignalHealthPanel } from "./SignalHealth.tsx";
 export { useIdeEngine } from "./useIdeEngine.ts";
 export { RECIPES } from "./recipes.ts";

@@ -74,12 +74,27 @@ export interface CheckResult {
   message: string;
 }
 
+export type PlotKind = "line" | "bar";
+
+export interface PlotSeries {
+  name?: string;
+  values: number[];
+}
+
+export interface PlotSpec {
+  title: string;
+  kind: PlotKind;
+  labels?: string[];
+  series: PlotSeries[];
+}
+
 export interface ExecutionResult {
   ok: boolean;
   stdout: string;
   error?: string;
   durationMs: number;
   checks?: CheckResult[];
+  plots?: PlotSpec[];
 }
 
 export interface RuntimeApi {
