@@ -4,8 +4,8 @@ export function SignalHealthPanel({ health }: { health: SignalHealth }) {
   if (health.source === "idle") {
     return (
       <section className="bioide-health bioide-health-idle">
-        <span>no stream</span>
-        <span>start mock or connect a board to check rate and electrode contact</span>
+        <span className="bioide-pill">idle</span>
+        <span>No stream. Start mock or connect a board to check packet rate and electrode contact.</span>
       </section>
     );
   }
@@ -37,10 +37,12 @@ export function SignalHealthPanel({ health }: { health: SignalHealth }) {
           <ElectrodeChip key={ch.index} electrode={ch} />
         ))}
       </div>
-      <p className="bioide-health-hint">
-        Packet rate should stay near {packetTarget}+ Hz. Flat = lost contact. Noisy / clipped =
-        movement, loose gel, or a saturated channel.
-      </p>
+      {!health.healthy || health.status !== "ok" ? (
+        <p className="bioide-health-hint">
+          Packet rate should stay near {packetTarget}+ Hz. Flat = lost contact. Noisy / clipped =
+          movement, loose gel, or a saturated channel.
+        </p>
+      ) : null}
     </section>
   );
 }

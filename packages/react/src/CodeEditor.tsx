@@ -24,10 +24,14 @@ export function CodeEditor({ value, language, onChange }: CodeEditorProps) {
   onChangeRef.current = onChange;
 
   useEffect(() => {
-    if (!parentRef.current) return;
+    const parent = parentRef.current;
+    if (!parent) return;
+
+    // StrictMode mounts twice; leftover CodeMirror DOM stacks a second editor.
+    parent.replaceChildren();
 
     const view = new EditorView({
-      parent: parentRef.current,
+      parent,
       state: EditorState.create({
         doc: value,
         extensions: [
@@ -43,7 +47,12 @@ export function CodeEditor({ value, language, onChange }: CodeEditorProps) {
           }),
           EditorView.theme({
             "&": { height: "100%" },
-            ".cm-scroller": { overflow: "auto", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" },
+            "&.cm-focused": { outline: "none" },
+            ".cm-scroller": {
+              overflow: "auto",
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+              fontSize: "13px",
+            },
           }),
         ],
       }),
@@ -53,6 +62,7 @@ export function CodeEditor({ value, language, onChange }: CodeEditorProps) {
     return () => {
       view.destroy();
       viewRef.current = null;
+      parent.replaceChildren();
     };
     // Recreate when language changes so the highlighter swaps cleanly.
   }, [language]);

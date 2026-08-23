@@ -6,20 +6,40 @@ export interface TerminalProps {
 }
 
 export function Terminal({ result, running }: TerminalProps) {
-  let body = "Ready.";
-  if (running) body = "Running...";
-  else if (result) {
-    const parts = [];
-    if (result.stdout) parts.push(result.stdout);
-    if (result.error) parts.push(result.error);
-    if (parts.length === 0) parts.push(result.ok ? "(no output)" : "Failed.");
-    parts.push(`\n[${result.language} ${result.ok ? "ok" : "error"} ${result.durationMs.toFixed(1)}ms]`);
-    body = parts.join("\n");
-  }
+  const empty = !running && !result;
+  const stdout = result?.stdout ?? "";
+  const error = result?.error ?? "";
+  const silent = Boolean(result && !stdout && !error);
 
   return (
-    <pre className="bioide-terminal">
-      {body}
-    </pre>
+    <section className="bioide-pane bioide-terminal-pane">
+      <header className="bioide-pane-head">
+        <span>Output</span>
+        <span className="bioide-pane-meta">
+          {running
+            ? "running"
+            : result
+              ? `${result.language} · ${result.ok ? "ok" : "error"} · ${result.durationMs.toFixed(1)} ms`
+              : "idle"}
+        </span>
+      </header>
+      <pre className="bioide-terminal">
+        {running ? (
+          <span className="bioide-term-muted">Running...</span>
+        ) : empty ? (
+          <span className="bioide-term-muted">Run the buffer to see stdout here.</span>
+        ) : (
+          <>
+            {stdout ? <span className="bioide-term-out">{stdout}</span> : null}
+            {error ? <span className="bioide-term-err">{error}</span> : null}
+            {silent ? (
+              <span className="bioide-term-muted">
+                {result?.ok ? "(no output)" : "Failed."}
+              </span>
+            ) : null}
+          </>
+        )}
+      </pre>
+    </section>
   );
 }
