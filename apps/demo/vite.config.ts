@@ -6,9 +6,6 @@ export default defineConfig({
   worker: {
     format: "es",
   },
-  optimizeDeps: {
-    exclude: ["pyodide"],
-  },
   server: {
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin",

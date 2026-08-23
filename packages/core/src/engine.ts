@@ -10,15 +10,13 @@ import type {
   ExecutionResult,
   FileBuffer,
   HardwareSource,
-  Language,
   SignalHealth,
   StudentEeg,
 } from "./types.ts";
 
-const DEFAULTS: Record<Language, { name: string; content: string }> = {
-  javascript: {
-    name: "main.js",
-    content: `const eeg = Context.EEG;
+const DEFAULT_BUFFER = {
+  name: "main.js",
+  content: `const eeg = Context.EEG;
 if (!eeg) {
   console.log("no EEG yet - start mock or connect hardware");
 } else {
@@ -26,27 +24,14 @@ if (!eeg) {
   console.log("alpha", eeg.alpha.toFixed(3));
   console.log("relaxation", (eeg.relaxation * 100).toFixed(0) + "%");
 }`,
-  },
-  python: {
-    name: "main.py",
-    content: `eeg = Context["EEG"]
-if eeg is None:
-    print("no EEG yet - start mock or connect hardware")
-else:
-    print(eeg["source"], eeg["device"])
-    print("alpha", round(eeg["alpha"], 3))
-    print("relaxation", f"{eeg['relaxation'] * 100:.0f}%")`,
-  },
 };
 
 export interface IdeEngineOptions {
-  language?: Language;
   content?: string;
 }
 
 export interface IdeSnapshot {
   buffer: FileBuffer;
-  language: Language;
   content: string;
   lastResult: ExecutionResult | null;
   running: boolean;
@@ -75,13 +60,10 @@ export class IdeEngine {
   private snapshot: IdeSnapshot;
 
   constructor(options: IdeEngineOptions = {}) {
-    const language = options.language ?? "javascript";
-    const preset = DEFAULTS[language];
     this.buffer = {
       id: "main",
-      name: preset.name,
-      language,
-      content: options.content ?? preset.content,
+      name: DEFAULT_BUFFER.name,
+      content: options.content ?? DEFAULT_BUFFER.content,
     };
     this.broker.start();
     this.snapshot = this.buildSnapshot();
@@ -93,10 +75,6 @@ export class IdeEngine {
 
   getBuffer(): FileBuffer {
     return this.buffer;
-  }
-
-  getLanguage(): Language {
-    return this.buffer.language;
   }
 
   getContent(): string {
@@ -178,24 +156,12 @@ export class IdeEngine {
     this.emit();
   }
 
-  setLanguage(language: Language): void {
-    if (this.buffer.language === language) return;
-    const preset = DEFAULTS[language];
-    this.buffer = {
-      ...this.buffer,
-      language,
-      name: preset.name,
-    };
-    this.emit();
-  }
-
   async execute(): Promise<ExecutionResult> {
     this.running = true;
     this.emit();
     try {
       const result = await this.runtime.executeCode(
         this.buffer.content,
-        this.buffer.language,
         this.broker.getLatest(),
       );
       this.lastResult = result;
@@ -236,7 +202,6 @@ export class IdeEngine {
   private buildSnapshot(): IdeSnapshot {
     return {
       buffer: this.buffer,
-      language: this.buffer.language,
       content: this.buffer.content,
       lastResult: this.lastResult,
       running: this.running,

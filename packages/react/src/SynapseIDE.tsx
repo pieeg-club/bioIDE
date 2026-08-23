@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import {
-  EEG_DEVICES,
-  IdeEngine,
-  type IdeEngineOptions,
-  type Language,
-} from "@bioide/core";
+import { EEG_DEVICES, IdeEngine, type IdeEngineOptions } from "@bioide/core";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { SignalHealthPanel } from "./SignalHealth.tsx";
 import { Terminal } from "./Terminal.tsx";
@@ -31,10 +26,6 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
   }, [engine, external]);
 
   const state = useIdeEngine(engine);
-
-  const setLanguage = (language: Language) => {
-    engine.setLanguage(language);
-  };
 
   const runningRef = useRef(state.running);
   runningRef.current = state.running;
@@ -66,16 +57,6 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
       <header className="bioide-toolbar">
         <div className="bioide-brand">bioIDE</div>
         <div className="bioide-cluster">
-          <label className="bioide-field">
-            Runtime
-            <select
-              value={state.language}
-              onChange={(event) => setLanguage(event.target.value as Language)}
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-            </select>
-          </label>
           <label className="bioide-field">
             Board
             <select
@@ -158,11 +139,10 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
         <section className="bioide-pane">
           <header className="bioide-pane-head">
             <span>{state.buffer.name}</span>
-            <span className="bioide-pane-meta">{state.language}</span>
+            <span className="bioide-pane-meta">javascript</span>
           </header>
           <CodeEditor
             value={state.content}
-            language={state.language}
             onChange={(value) => engine.setContent(value)}
           />
         </section>

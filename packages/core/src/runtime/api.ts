@@ -1,3 +1,3 @@
-import type { Language, RuntimeApi } from "../types.ts";
+import type { RuntimeApi } from "../types.ts";
 
-export type { RuntimeApi, Language };
+export type { RuntimeApi };

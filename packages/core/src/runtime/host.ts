@@ -1,5 +1,5 @@
 import * as Comlink from "comlink";
-import type { EegFrame, ExecutionResult, Language, RuntimeApi } from "../types.ts";
+import type { EegFrame, ExecutionResult, RuntimeApi } from "../types.ts";
 
 export class RuntimeHost {
   private worker: Worker | null = null;
@@ -15,20 +15,12 @@ export class RuntimeHost {
     return this.api;
   }
 
-  executeCode(
-    code: string,
-    lang: Language,
-    eeg?: EegFrame | null,
-  ): Promise<ExecutionResult> {
-    return this.ensureApi().executeCode(code, lang, eeg);
+  executeCode(code: string, eeg?: EegFrame | null): Promise<ExecutionResult> {
+    return this.ensureApi().executeCode(code, eeg);
   }
 
   pushEeg(frame: EegFrame): Promise<void> {
     return this.ensureApi().pushEeg(frame);
-  }
-
-  isPythonReady(): Promise<boolean> {
-    return this.ensureApi().isPythonReady();
   }
 
   dispose(): void {

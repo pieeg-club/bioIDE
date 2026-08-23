@@ -11,7 +11,6 @@ export type {
   ExecutionResult,
   FileBuffer,
   HardwareSource,
-  Language,
   RuntimeApi,
   SignalHealth,
   StreamStatus,

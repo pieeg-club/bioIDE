@@ -19,7 +19,7 @@ export function Terminal({ result, running }: TerminalProps) {
           {running
             ? "running"
             : result
-              ? `${result.language} · ${result.ok ? "ok" : "error"} · ${result.durationMs.toFixed(1)} ms`
+              ? `${result.ok ? "ok" : "error"} · ${result.durationMs.toFixed(1)} ms`
               : "idle"}
         </span>
       </header>

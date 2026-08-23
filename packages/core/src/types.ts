@@ -1,4 +1,3 @@
-export type Language = "javascript" | "python";
 export type HardwareSource = "mock" | "live" | "idle";
 export type ContactQuality = "ok" | "flat" | "noisy" | "clipped";
 export type StreamStatus = "idle" | "ok" | "slow" | "stale";
@@ -28,7 +27,6 @@ export interface SignalHealth {
 export interface FileBuffer {
   id: string;
   name: string;
-  language: Language;
   content: string;
 }
 
@@ -73,20 +71,14 @@ export interface StudentEeg {
 
 export interface ExecutionResult {
   ok: boolean;
-  language: Language;
   stdout: string;
   error?: string;
   durationMs: number;
 }
 
 export interface RuntimeApi {
-  executeCode(
-    code: string,
-    lang: Language,
-    eeg?: EegFrame | null,
-  ): Promise<ExecutionResult>;
+  executeCode(code: string, eeg?: EegFrame | null): Promise<ExecutionResult>;
   pushEeg(frame: EegFrame): Promise<void>;
-  isPythonReady(): Promise<boolean>;
 }
 
 export type EngineListener = () => void;

@@ -1,6 +1,6 @@
 # bioIDE
 
-Zero-backend, dual-runtime (JS/Python) browser IDE monorepo. Package manager: npm workspaces.
+Zero-backend JavaScript browser IDE monorepo. Package manager: npm workspaces.
 
 ## Layout
 
@@ -10,7 +10,6 @@ Zero-backend, dual-runtime (JS/Python) browser IDE monorepo. Package manager: np
 
 ## Rules
 
-- Both runtimes execute in Web Workers via Comlink.
-- Pyodide is lazy-loaded inside the worker.
+- JavaScript executes in a Web Worker via Comlink.
 - `packages/core` must stay UI-free.
 - Do not add a backend. Do not add tests unless asked.

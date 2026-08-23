@@ -1,6 +1,6 @@
 # bioIDE
 
-Zero-backend, dual-runtime (JS / Python) browser IDE.
+Zero-backend JavaScript browser IDE for EEG.
 
 ## Packages
 
@@ -15,6 +15,4 @@ npm install
 npm run dev
 ```
 
-Then open the printed local URL. Switch runtime in the toolbar and click **Run**.
-
-Python is lazy-loaded via Pyodide on first Python execution (CDN). JavaScript runs immediately in the worker.
+Then open the printed local URL and click **Run**. JavaScript executes in a Web Worker.
