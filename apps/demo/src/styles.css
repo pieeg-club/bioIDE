@@ -1,0 +1,11 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { font-family: system-ui, sans-serif; background: #111; color: #eee; }
+.demo { height: 100%; display: flex; flex-direction: column; }
+.demo h1 { margin: 0; padding: 8px 12px; font-size: 14px; font-weight: 600; }
+.bioide-root { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.bioide-toolbar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; }
+.bioide-toolbar select, .bioide-toolbar button { margin-left: 6px; }
+.bioide-panes { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+.bioide-editor, .bioide-terminal { min-height: 0; height: 100%; }
+.bioide-terminal { margin: 0; padding: 12px; overflow: auto; background: #0b0b0b; border-left: 1px solid #333; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }

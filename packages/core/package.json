@@ -1,0 +1,12 @@
+{
+  "name": "@bioide/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "comlink": "^4.4.2"
+  }
+}
