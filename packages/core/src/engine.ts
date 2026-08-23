@@ -16,18 +16,21 @@ import type {
 
 const DEFAULT_BUFFER = {
   name: "main.js",
-  content: `const eeg = Context.EEG;
+  content: `const eeg = EEG;
 if (!eeg) {
   console.log("no EEG yet - start mock or connect hardware");
 } else {
+  const x = tf.tensor1d([eeg.alpha, eeg.beta, eeg.theta, eeg.delta, eeg.gamma]);
   console.log(eeg.source, eeg.device);
-  console.log("alpha", eeg.alpha.toFixed(3));
-  console.log("relaxation", (eeg.relaxation * 100).toFixed(0) + "%");
+  console.log("bands", x.arraySync());
+  console.log("mean", x.mean().arraySync());
+  x.dispose();
 }`,
 };
 
 export interface IdeEngineOptions {
   content?: string;
+  checks?: string | null;
 }
 
 export interface IdeSnapshot {
@@ -35,6 +38,7 @@ export interface IdeSnapshot {
   content: string;
   lastResult: ExecutionResult | null;
   running: boolean;
+  checks: string | null;
   hardware: HardwareSource;
   deviceId: string;
   hardwareError: string | null;
@@ -53,6 +57,7 @@ export class IdeEngine {
   private readonly listeners = new Set<EngineListener>();
   private buffer: FileBuffer;
   private lastResult: ExecutionResult | null = null;
+  private checks: string | null = null;
   private running = false;
   private hardware: HardwareSource = "idle";
   private deviceId = "ironbci-8";
@@ -65,6 +70,7 @@ export class IdeEngine {
       name: DEFAULT_BUFFER.name,
       content: options.content ?? DEFAULT_BUFFER.content,
     };
+    this.checks = options.checks ?? null;
     this.broker.start();
     this.snapshot = this.buildSnapshot();
   }
@@ -156,6 +162,11 @@ export class IdeEngine {
     this.emit();
   }
 
+  setChecks(checks: string | null): void {
+    this.checks = checks;
+    this.emit();
+  }
+
   async execute(): Promise<ExecutionResult> {
     this.running = true;
     this.emit();
@@ -163,6 +174,7 @@ export class IdeEngine {
       const result = await this.runtime.executeCode(
         this.buffer.content,
         this.broker.getLatest(),
+        this.checks,
       );
       this.lastResult = result;
       return result;
@@ -205,6 +217,7 @@ export class IdeEngine {
       content: this.buffer.content,
       lastResult: this.lastResult,
       running: this.running,
+      checks: this.checks,
       hardware: this.hardware,
       deviceId: this.deviceId,
       hardwareError: this.hardwareError,

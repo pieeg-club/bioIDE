@@ -1,8 +1,18 @@
 /// <reference lib="webworker" />
 
 import * as Comlink from "comlink";
+import * as tf from "@tensorflow/tfjs";
 import { toStudentEeg } from "../hardware/context.ts";
-import type { EegFrame, ExecutionResult, RuntimeApi, StudentEeg } from "../types.ts";
+import type {
+  CheckResult,
+  EegFrame,
+  ExecutionResult,
+  RuntimeApi,
+  StudentEeg,
+} from "../types.ts";
+
+await tf.setBackend("cpu");
+await tf.ready();
 
 let latestEeg: StudentEeg | null = null;
 
@@ -19,28 +29,58 @@ function formatArgs(args: unknown[]): string {
     .join(" ");
 }
 
-function executeJavaScript(code: string): { stdout: string } {
-  const lines: string[] = [];
+function createConsole(lines: string[]) {
   const capture = (...args: unknown[]) => {
     lines.push(formatArgs(args));
   };
-
-  const sandboxConsole = {
+  return {
     log: capture,
     info: capture,
     debug: capture,
     warn: capture,
     error: capture,
   };
+}
 
+function createCheck(results: CheckResult[]) {
+  return (condition: unknown, message: string) => {
+    const ok = Boolean(condition);
+    results.push({
+      ok,
+      message: message || (ok ? "ok" : "check failed"),
+    });
+    if (!ok) throw new Error(message || "check failed");
+  };
+}
+
+function executeJavaScript(
+  code: string,
+  checks?: string | null,
+): { stdout: string; checks: CheckResult[]; error?: string } {
+  const lines: string[] = [];
+  const checkResults: CheckResult[] = [];
+  const sandboxConsole = createConsole(lines);
+  const check = createCheck(checkResults);
   const context = { EEG: latestEeg };
-  const fn = new Function(
-    "console",
-    "Context",
-    `"use strict";\n${code}\n`,
-  );
-  fn(sandboxConsole, context);
-  return { stdout: lines.join("\n") };
+  const body = checks ? `${code}\n;\n${checks}\n` : `${code}\n`;
+  try {
+    const fn = new Function(
+      "console",
+      "Context",
+      "EEG",
+      "tf",
+      "check",
+      `"use strict";\n${body}`,
+    );
+    fn(sandboxConsole, context, latestEeg, tf, check);
+    return { stdout: lines.join("\n"), checks: checkResults };
+  } catch (err) {
+    return {
+      stdout: lines.join("\n"),
+      checks: checkResults,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 const api: RuntimeApi = {
@@ -51,24 +91,18 @@ const api: RuntimeApi = {
   async executeCode(
     code: string,
     eeg?: EegFrame | null,
+    checks?: string | null,
   ): Promise<ExecutionResult> {
     if (eeg) latestEeg = toStudentEeg(eeg);
     const started = performance.now();
-    try {
-      const { stdout } = executeJavaScript(code);
-      return {
-        ok: true,
-        stdout,
-        durationMs: performance.now() - started,
-      };
-    } catch (err) {
-      return {
-        ok: false,
-        stdout: "",
-        error: err instanceof Error ? err.message : String(err),
-        durationMs: performance.now() - started,
-      };
-    }
+    const result = executeJavaScript(code, checks);
+    return {
+      ok: !result.error,
+      stdout: result.stdout,
+      error: result.error,
+      durationMs: performance.now() - started,
+      checks: result.checks,
+    };
   },
 };
 

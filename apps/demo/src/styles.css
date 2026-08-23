@@ -260,6 +260,7 @@ body {
 }
 .bioide-term-out { display: block; }
 .bioide-term-err { display: block; color: #f08888; }
+.bioide-term-check { display: block; color: #8ed39a; }
 .bioide-term-muted { color: #6d7480; }
 
 @media (max-width: 860px) {

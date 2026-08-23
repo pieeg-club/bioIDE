@@ -69,15 +69,25 @@ export interface StudentEeg {
   ts: number;
 }
 
+export interface CheckResult {
+  ok: boolean;
+  message: string;
+}
+
 export interface ExecutionResult {
   ok: boolean;
   stdout: string;
   error?: string;
   durationMs: number;
+  checks?: CheckResult[];
 }
 
 export interface RuntimeApi {
-  executeCode(code: string, eeg?: EegFrame | null): Promise<ExecutionResult>;
+  executeCode(
+    code: string,
+    eeg?: EegFrame | null,
+    checks?: string | null,
+  ): Promise<ExecutionResult>;
   pushEeg(frame: EegFrame): Promise<void>;
 }
 

@@ -15,8 +15,12 @@ export class RuntimeHost {
     return this.api;
   }
 
-  executeCode(code: string, eeg?: EegFrame | null): Promise<ExecutionResult> {
-    return this.ensureApi().executeCode(code, eeg);
+  executeCode(
+    code: string,
+    eeg?: EegFrame | null,
+    checks?: string | null,
+  ): Promise<ExecutionResult> {
+    return this.ensureApi().executeCode(code, eeg, checks);
   }
 
   pushEeg(frame: EegFrame): Promise<void> {

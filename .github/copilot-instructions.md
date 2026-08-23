@@ -11,5 +11,6 @@ Zero-backend JavaScript browser IDE monorepo. Package manager: npm workspaces.
 ## Rules
 
 - JavaScript executes in a Web Worker via Comlink.
-- `packages/core` must stay UI-free.
+- TensorFlow.js is injected in the worker (`tf`). Optional hidden checks append after user code.
+- `packages/core` must stay UI-free. No course / lesson UI.
 - Do not add a backend. Do not add tests unless asked.

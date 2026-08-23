@@ -9,7 +9,8 @@ export function Terminal({ result, running }: TerminalProps) {
   const empty = !running && !result;
   const stdout = result?.stdout ?? "";
   const error = result?.error ?? "";
-  const silent = Boolean(result && !stdout && !error);
+  const checks = result?.checks ?? [];
+  const silent = Boolean(result && !stdout && !error && checks.length === 0);
 
   return (
     <section className="bioide-pane bioide-terminal-pane">
@@ -31,6 +32,14 @@ export function Terminal({ result, running }: TerminalProps) {
         ) : (
           <>
             {stdout ? <span className="bioide-term-out">{stdout}</span> : null}
+            {checks.map((item, index) => (
+              <span
+                key={`${index}-${item.message}`}
+                className={item.ok ? "bioide-term-check" : "bioide-term-err"}
+              >
+                {item.ok ? "ok" : "fail"} {item.message}
+              </span>
+            ))}
             {error ? <span className="bioide-term-err">{error}</span> : null}
             {silent ? (
               <span className="bioide-term-muted">
