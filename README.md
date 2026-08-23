@@ -12,6 +12,8 @@ Zero-backend JavaScript browser IDE for EEG.
 
 Student JS runs in a Web Worker. The sandbox injects `tf` (`@tensorflow/tfjs`, CPU backend), `EEG` / `Context.EEG`, `console`, and `check(condition, message)`.
 
+The toolbar **Recipes** menu loads commented examples into the editor (EEG stream, tensors, predict, train, focus gate, assertions). Click Mock, pick a recipe, Run.
+
 Optional hidden checks can be passed to `IdeEngine` (`checks` option or `setChecks()`). They are appended after the buffer on Run and never shown in the editor.
 
 ## Setup

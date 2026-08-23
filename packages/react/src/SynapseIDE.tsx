@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EEG_DEVICES, IdeEngine, type IdeEngineOptions } from "@bioide/core";
 import { CodeEditor } from "./CodeEditor.tsx";
+import { RECIPES } from "./recipes.ts";
 import { SignalHealthPanel } from "./SignalHealth.tsx";
 import { Terminal } from "./Terminal.tsx";
 import { useIdeEngine } from "./useIdeEngine.ts";
@@ -26,6 +27,7 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
   }, [engine, external]);
 
   const state = useIdeEngine(engine);
+  const [recipeId, setRecipeId] = useState("");
 
   const runningRef = useRef(state.running);
   runningRef.current = state.running;
@@ -70,6 +72,27 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
                 </option>
               ))}
             </select>
+          <label className="bioide-field">
+            Recipes
+            <select
+              value={recipeId}
+              onChange={(event) => {
+                const id = event.target.value;
+                const recipe = RECIPES.find((item) => item.id === id);
+                setRecipeId(id);
+                if (recipe) engine.setContent(recipe.content);
+              }}
+            >
+              <option value="" disabled>
+                pick an example
+              </option>
+              {RECIPES.map((recipe) => (
+                <option key={recipe.id} value={recipe.id}>
+                  {recipe.label}
+                </option>
+              ))}
+            </select>
+          </label>
           </label>
         </div>
         <div className="bioide-cluster">

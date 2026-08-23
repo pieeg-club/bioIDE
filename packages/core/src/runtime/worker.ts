@@ -53,10 +53,10 @@ function createCheck(results: CheckResult[]) {
   };
 }
 
-function executeJavaScript(
+async function executeJavaScript(
   code: string,
   checks?: string | null,
-): { stdout: string; checks: CheckResult[]; error?: string } {
+): Promise<{ stdout: string; checks: CheckResult[]; error?: string }> {
   const lines: string[] = [];
   const checkResults: CheckResult[] = [];
   const sandboxConsole = createConsole(lines);
@@ -70,9 +70,9 @@ function executeJavaScript(
       "EEG",
       "tf",
       "check",
-      `"use strict";\n${body}`,
+      `"use strict";\nreturn (async () => {\n${body}\n})();`,
     );
-    fn(sandboxConsole, context, latestEeg, tf, check);
+    await fn(sandboxConsole, context, latestEeg, tf, check);
     return { stdout: lines.join("\n"), checks: checkResults };
   } catch (err) {
     return {
@@ -95,7 +95,7 @@ const api: RuntimeApi = {
   ): Promise<ExecutionResult> {
     if (eeg) latestEeg = toStudentEeg(eeg);
     const started = performance.now();
-    const result = executeJavaScript(code, checks);
+    const result = await executeJavaScript(code, checks);
     return {
       ok: !result.error,
       stdout: result.stdout,

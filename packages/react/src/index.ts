@@ -6,3 +6,5 @@ export { Terminal } from "./Terminal.tsx";
 export type { TerminalProps } from "./Terminal.tsx";
 export { SignalHealthPanel } from "./SignalHealth.tsx";
 export { useIdeEngine } from "./useIdeEngine.ts";
+export { RECIPES } from "./recipes.ts";
+export type { Recipe } from "./recipes.ts";
