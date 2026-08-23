@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EEG_DEVICES, IdeEngine, type IdeEngineOptions } from "@bioide/core";
+import { ApiPanel } from "./ApiPanel.tsx";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { RECIPES } from "./recipes.ts";
 import { SignalHealthPanel } from "./SignalHealth.tsx";
@@ -28,6 +29,7 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
 
   const state = useIdeEngine(engine);
   const [recipeId, setRecipeId] = useState("");
+  const [apiOpen, setApiOpen] = useState(false);
 
   const runningRef = useRef(state.running);
   runningRef.current = state.running;
@@ -145,6 +147,14 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
           </div>
           <button
             type="button"
+            className={`bioide-btn${apiOpen ? " bioide-btn-active" : ""}`}
+            aria-pressed={apiOpen}
+            onClick={() => setApiOpen((open) => !open)}
+          >
+            API
+          </button>
+          <button
+            type="button"
             className="bioide-btn bioide-btn-primary"
             disabled={state.running}
             onClick={run}
@@ -158,11 +168,11 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
         <p className="bioide-hw-error">{state.hardwareError}</p>
       ) : null}
       <SignalHealthPanel health={state.health} />
-      <div className="bioide-panes">
+      <div className={`bioide-panes${apiOpen ? " bioide-panes-api" : ""}`}>
         <section className="bioide-pane">
           <header className="bioide-pane-head">
             <span>{state.buffer.name}</span>
-            <span className="bioide-pane-meta">javascript</span>
+            <span className="bioide-pane-meta">javascript · type EEG. or bio.</span>
           </header>
           <CodeEditor
             value={state.content}
@@ -170,6 +180,7 @@ export function SynapseIDE({ engine: external, ...options }: SynapseIDEProps) {
           />
         </section>
         <Terminal result={state.lastResult} running={state.running} />
+        {apiOpen ? <ApiPanel /> : null}
       </div>
     </div>
   );

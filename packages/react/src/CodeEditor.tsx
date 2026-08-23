@@ -4,6 +4,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { sandboxEditorExtensions } from "./sandboxCompletions.ts";
 
 export interface CodeEditorProps {
   value: string;
@@ -32,6 +33,7 @@ export function CodeEditor({ value, onChange }: CodeEditorProps) {
           history(),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           javascript(),
+          ...sandboxEditorExtensions,
           oneDark,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {

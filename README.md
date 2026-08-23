@@ -3,6 +3,8 @@
 
 Zero-backend JavaScript browser IDE for EEG.
 
+Hardware stream uses the [JavaScript SDK](https://docs.pieeg.com/software/api/javascript-sdk/).
+
 <img width="1909" height="787" alt="image" src="https://github.com/user-attachments/assets/bbf61ce1-dcbe-4796-a39f-43cd568b3a92" />
 
 
@@ -39,22 +41,23 @@ The host keeps a rolling frame history (mock or live) and seeds the worker on Ru
 | `bio.crossValScore(X, y, k)` | stratified k-fold, balanced accuracy |
 | `bio.cohensD(a, b)` | within-session effect size |
 
-Also: `mean`, `std`, `rms`, `zscore`, `fft`, `bandpower`, `kfold`, `trainTestSplit`, `accuracy`, `balancedAccuracy`, `confusion`, `sleep`, `clearDataset`, `epochs`.
+Also: `isFocused`, `isRelaxed`, `bandPower`, `bands`, `mean`, `std`, `rms`, `zscore`, `fft`, `bandpower`, `kfold`, `trainTestSplit`, `accuracy`, `balancedAccuracy`, `confusion`, `sleep`, `clearDataset`, `epochs`, `help`.
 
 The session dataset lives in the worker until reload. History is frame-rate (about 12-30 Hz), not the full 250 Hz raw stream.
 
 ## Recipes
 
-The toolbar **Recipes** menu loads commented examples:
+The toolbar **Recipes** menu loads commented examples. **API** opens the sandbox list and the [JavaScript SDK](https://docs.pieeg.com/software/api/javascript-sdk/). Type `EEG.` or `bio.` in the editor for completions.
 
-1. Hello EEG
-2. Band tensor
-3. Tiny predict
-4. Train a blink
-5. Focus gate
-6. Assert a model
-7. Window features
-8. Calibrate a classifier
+1. SDK helpers
+2. Hello EEG
+3. Band tensor
+4. Tiny predict
+5. Train a blink
+6. Focus gate
+7. Assert a model
+8. Window features
+9. Calibrate a classifier
 
 Click **Mock** (or **Connect**), pick a recipe, then **Run** (`Ctrl+Enter` / `⌘↵`). Window / calibrate recipes need the stream running first.
 

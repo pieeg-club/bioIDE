@@ -9,3 +9,4 @@ export { SignalHealthPanel } from "./SignalHealth.tsx";
 export { useIdeEngine } from "./useIdeEngine.ts";
 export { RECIPES } from "./recipes.ts";
 export type { Recipe } from "./recipes.ts";
+export { ApiPanel } from "./ApiPanel.tsx";

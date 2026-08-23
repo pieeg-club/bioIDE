@@ -4,6 +4,7 @@ import * as Comlink from "comlink";
 import * as tf from "@tensorflow/tfjs";
 import { toStudentEeg } from "../hardware/context.ts";
 import * as bioLib from "./bio.ts";
+import { FREQUENCY_BANDS, SANDBOX_HELP } from "./apiRef.ts";
 import type {
   CheckResult,
   Dataset,
@@ -156,8 +157,35 @@ function clearDataset(): void {
   recordings.length = 0;
 }
 
+function isFocused(threshold = 0.6): boolean {
+  return (latestEeg?.focus ?? 0) > threshold;
+}
+
+function isRelaxed(threshold = 0.6): boolean {
+  return (latestEeg?.relaxation ?? 0) > threshold;
+}
+
+function bandPower(name: string): number {
+  if (!latestEeg) return 0;
+  switch (name.toLowerCase()) {
+    case "delta":
+      return latestEeg.delta;
+    case "theta":
+      return latestEeg.theta;
+    case "alpha":
+      return latestEeg.alpha;
+    case "beta":
+      return latestEeg.beta;
+    case "gamma":
+      return latestEeg.gamma;
+    default:
+      return 0;
+  }
+}
+
 const bio = {
   featureNames: [...FEATURE_NAMES],
+  bands: FREQUENCY_BANDS,
   window: readWindow,
   signal: readSignal,
   features: featuresOf,
@@ -166,6 +194,10 @@ const bio = {
   dataset,
   clearDataset,
   epochs: () => [...recordings],
+  isFocused,
+  isRelaxed,
+  bandPower,
+  help: () => SANDBOX_HELP,
   mean: bioLib.mean,
   std: bioLib.std,
   rms: bioLib.rms,

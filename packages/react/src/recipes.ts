@@ -6,6 +6,35 @@ export interface Recipe {
 
 export const RECIPES: Recipe[] = [
   {
+    id: "sdk-helpers",
+    label: "SDK helpers",
+    content: `// Recipe: SDK helpers
+// Same neural-state helpers as pieeg.js, already computed onto EEG / bio.
+// Click Mock (or Connect), then Run. Open API for the full list.
+
+const eeg = EEG;
+if (!eeg) throw new Error("start Mock or Connect first");
+
+console.log(bio.help());
+console.log(eeg.device, eeg.channels + " ch @" + eeg.sampleRate + " Hz");
+console.log("focus", eeg.focus.toFixed(2), "relaxed?", bio.isRelaxed());
+console.log("alpha", bio.bandPower("Alpha").toFixed(3));
+
+plot({
+  title: "SDK state",
+  kind: "bar",
+  labels: ["focus", "relax", "meditate", "gate"],
+  values: [eeg.focus, eeg.relaxation, eeg.meditation, 0.6],
+});
+plot({
+  title: "band powers",
+  kind: "bar",
+  labels: bio.bands.map((band) => band.name),
+  values: bio.bands.map((band) => bio.bandPower(band.name)),
+});
+`,
+  },
+  {
     id: "hello-eeg",
     label: "Hello EEG",
     content: `// Recipe: Hello EEG
