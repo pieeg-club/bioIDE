@@ -1,6 +1,10 @@
+
 # bioIDE
 
 Zero-backend JavaScript browser IDE for EEG.
+
+<img width="1909" height="787" alt="image" src="https://github.com/user-attachments/assets/bbf61ce1-dcbe-4796-a39f-43cd568b3a92" />
+
 
 ## Packages
 
